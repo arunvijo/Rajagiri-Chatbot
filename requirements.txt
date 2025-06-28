@@ -1,6 +1,2 @@
 flask
-beautifulsoup4
 requests
-sentence-transformers
-faiss-cpu
-numpy
