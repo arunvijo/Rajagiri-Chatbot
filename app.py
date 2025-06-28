@@ -1,27 +1,25 @@
 # app.py
 
 from flask import Flask, request, jsonify
-from google_cse import google_search
+from bot import handle_message
 
 app = Flask(__name__)
 
 @app.route("/")
-def health():
-    return "Rajagiri Chatbot API is running"
+def index():
+    return "Rajagiri Chatbot Backend is live."
 
-@app.route("/query", methods=["POST"])
-def handle_query():
+@app.route("/chat", methods=["POST"])
+def chat():
     data = request.get_json()
-    query = data.get("query")
+    session_id = data.get("session_id")
+    message = data.get("message")
 
-    if not query:
-        return jsonify({"error": "No query provided"}), 400
+    if not session_id or not message:
+        return jsonify({"error": "Missing session_id or message"}), 400
 
-    results = google_search(query)
-    return jsonify({
-        "query": query,
-        "results": results
-    })
+    response = handle_message(session_id, message)
+    return jsonify({"response": response})
 
 if __name__ == "__main__":
     app.run(debug=True)
