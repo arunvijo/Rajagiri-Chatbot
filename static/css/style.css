@@ -1,0 +1,27 @@
+/* Rajagiri colour palette */
+:root {
+  --maroon: #800000;
+  --gold:   #d4af37;
+  --cream:  #fff9f5;
+}
+
+body { background: var(--cream); }
+
+.btn-maroon {
+  background: var(--maroon);
+  color: #fff;
+}
+.btn-maroon:hover { background: #5d0000; }
+
+.card.border-maroon { border-left: 6px solid var(--maroon); }
+.card.border-warning { border-left: 6px solid var(--gold); }
+
+.card-body {
+  font-family: 'Merriweather', serif;
+  line-height: 1.6;
+}
+
+input.form-control {
+  border: 1px solid var(--maroon);
+  border-radius: 4px;
+}

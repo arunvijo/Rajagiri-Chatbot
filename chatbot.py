@@ -16,7 +16,7 @@ client = OpenAI(
 )
 
 # Pick any model available to your OpenRouter account
-MODEL_ID = os.getenv("OPENROUTER_MODEL", "meta-llama/llama-3-70b-instruct")
+MODEL_ID = os.getenv("OPENROUTER_MODEL", "mistralai/mistral-7b-instruct")
 
 
 def ask_rajagiri_bot(question: str, *, k: int = 6) -> Tuple[str, List[dict]]:

@@ -1,115 +1,46 @@
-import streamlit as st
+"""Flask backend for Rajagiri Chatbot."""
+import os
 from dotenv import load_dotenv
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+from flask_session import Session
+
+# import your pipeline
 from chatbot import ask_rajagiri_bot
 
 load_dotenv()
 
-st.set_page_config(page_title="Rajagiri College Chatbot", page_icon="🎓", layout="wide")
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET", "change-me")
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
 
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if "history" not in session:
+        session["history"] = []  # list of {role, content}
 
-    html, body, [class*="css"]  {
-        font-family: 'Merriweather', serif;
-        background-color: #fdfdfd;
-        color: #000;
-    }
+    if request.method == "POST":
+        question = request.form.get("question", "").strip()
+        if question:
+            # append user message
+            session["history"].append({"role": "user", "content": question})
 
-    .stChatMessage {
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        font-size: 15px;
-        line-height: 1.5;
-    }
+            # get bot answer
+            answer, _ = ask_rajagiri_bot(question)
+            session["history"].append({"role": "assistant", "content": answer})
+            session.modified = True
+        return redirect(url_for("index"))
 
-    .stChatMessage.user {
-        background-color: #f1f1f1;
-        border-left: 6px solid #800000;
-        color: #000000;
-    }
+    return render_template("index.html", history=session.get("history", []))
 
-    .stChatMessage.assistant {
-        background-color: #ffffff;
-        border-left: 6px solid #007BFF;
-        color: #000000;
-    }
+# ---- JSON endpoint (optional) ----
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    data = request.get_json(force=True)
+    query = data.get("query", "")
+    answer, sources = ask_rajagiri_bot(query)
+    return jsonify({"answer": answer, "sources": sources})
 
-    .stButton>button {
-        background-color: #800000;
-        color: white;
-        border-radius: 6px;
-        font-weight: bold;
-    }
-
-    .stTextInput>div>input {
-        border-radius: 6px;
-        border: 1px solid #800000;
-        padding: 0.5rem;
-    }
-
-    .stMarkdown h1 {
-        color: #800000;
-        font-size: 2.2rem;
-        font-weight: bold;
-    }
-
-    .stMarkdown a {
-        color: #007BFF !important;
-        font-weight: bold;
-    }
-
-    .st-expander {
-        background-color: #f9f9f9 !important;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-    }
-
-    .st-expanderHeader {
-        font-weight: bold;
-    }
-
-    .block-container {
-        padding: 2rem 4rem;
-    }
-</style>
-
-""", unsafe_allow_html=True)
-
-st.markdown("<h1>🎓 Rajagiri College Chatbot</h1>", unsafe_allow_html=True)
-st.caption("Ask me about <b>departments</b>, <b>admissions</b>, <b>scholarships</b>, or <b>campus life</b>!", unsafe_allow_html=True)
-
-
-# ------------------------------  Session State ------------------------------
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-# ------------------------------  Chat History ------------------------------
-for h in st.session_state.history:
-    with st.chat_message(h["role"]):
-        st.markdown(h["content"], unsafe_allow_html=True)
-
-# ------------------------------  Chat Input ------------------------------
-question = st.chat_input("Type your question and press Enter…")
-
-if question:
-    # Display user input
-    st.session_state.history.append({"role": "user", "content": question})
-    with st.chat_message("user"):
-        st.markdown(question)
-
-    # Get answer
-    with st.spinner("Thinking…"):
-        answer, sources = ask_rajagiri_bot(question)
-
-    # Display assistant response
-    st.session_state.history.append({"role": "assistant", "content": answer})
-    with st.chat_message("assistant"):
-        st.markdown(answer)
-
-        # Sources (collapsible)
-        if sources:
-            with st.expander("🔍 Show sources"):
-                for src in sources:
-                    st.markdown(f"- [{src['title']}]({src['link']})")
+if __name__ == "__main__":
+    # local dev server (use Gunicorn in production)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))

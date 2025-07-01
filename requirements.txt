@@ -4,3 +4,6 @@ requests
 beautifulsoup4
 streamlit
 python-dotenv
+gunicorn
+flask
+flask-session
