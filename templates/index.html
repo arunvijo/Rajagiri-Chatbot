@@ -1,24 +1,97 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container py-5">
-  <h1 class="text-center mb-4">Rajagiri College Chatbot</h1>
-  <p class="lead text-center mb-5">Ask about admissions, departments, scholarships, or campus life.</p>
-
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-      {% for msg in history %}
-        <div class="card mb-3 border-{{ 'maroon' if msg.role=='user' else 'warning' }}">
-          <div class="card-body bg-{{ 'light' if msg.role=='user' else 'white' }}">
-            <p class="mb-0">{{ msg.content|safe }}</p>
+<div class="chat-container">
+  {% if not history %}
+  <div class="welcome-message">
+    <h1 class="text-center mb-4">Rajagiri College Chatbot</h1>
+    <p class="text-center text-secondary">Ask about admissions, departments, scholarships, or campus life.</p>
+    
+    <div class="suggestions">
+      <div class="suggestion-card" onclick="setQuestion(this)">
+        <i class="fas fa-graduation-cap"></i>
+        <span>What are the admission requirements for CS?</span>
+      </div>
+      <div class="suggestion-card" onclick="setQuestion(this)">
+        <i class="fas fa-book"></i>
+        <span>Tell me about the English department</span>
+      </div>
+      <div class="suggestion-card" onclick="setQuestion(this)">
+        <i class="fas fa-rupee-sign"></i>
+        <span>What scholarships are available?</span>
+      </div>
+      <div class="suggestion-card" onclick="setQuestion(this)">
+        <i class="fas fa-home"></i>
+        <span>Describe campus facilities</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  
+  <div class="chat-messages" id="chatMessages">
+    {% for msg in history %}
+      <div class="message {{ 'user-message' if msg.role=='user' else 'bot-message' }}">
+        <div class="message-avatar">
+          {% if msg.role == 'user' %}
+            <i class="fas fa-user"></i>
+          {% else %}
+            <img src="{{ url_for('static', filename='images/rajagiri-logo.png') }}" alt="Rajagiri Logo">
+          {% endif %}
+        </div>
+        <div class="message-content">
+          {{ msg.content | safe }}
+          {% if msg.role == 'assistant' %}
+            <div class="message-actions">
+              <button class="btn-action" title="Copy"><i class="far fa-copy"></i></button>
+              <button class="btn-action" title="Like"><i class="far fa-thumbs-up"></i></button>
+              <button class="btn-action" title="Dislike"><i class="far fa-thumbs-down"></i></button>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+    <div id="loadingIndicator" style="display: none;">
+      <div class="message bot-message">
+        <div class="message-avatar">
+          <img src="{{ url_for('static', filename='images/rajagiri-logo.png') }}" alt="Rajagiri Logo">
+        </div>
+        <div class="message-content">
+          <div class="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
         </div>
-      {% endfor %}
-
-      <form method="POST" class="d-flex">
-        <input name="question" class="form-control me-2" placeholder="Type your query…" autocomplete="off" required>
-        <button class="btn btn-maroon" type="submit">Ask</button>
-      </form>
+      </div>
+    </div>
+  </div>
+  
+  <div class="input-container">
+    <form method="POST" id="chatForm" class="d-flex gap-2 align-items-center">
+      <div class="input-group">
+        <input name="question" id="userInput" class="form-control" placeholder="Type your query..." autocomplete="off" required>
+        <button class="btn btn-send" type="submit">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </form>
+    <div class="disclaimer">
+      <small class="text-muted">Rajagiri Chatbot may produce inaccurate information. Verify important details.</small>
     </div>
   </div>
 </div>
+
+<script>
+  function setQuestion(element) {
+    document.getElementById('userInput').value = element.querySelector('span').textContent;
+    document.getElementById('userInput').focus();
+  }
+  
+  document.getElementById('chatForm').addEventListener('submit', function() {
+    document.getElementById('loadingIndicator').style.display = 'block';
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+  
+  // Auto-scroll to bottom of chat
+  window.scrollTo(0, document.body.scrollHeight);
+</script>
 {% endblock %}
