@@ -29,26 +29,37 @@
   
   <div class="chat-messages" id="chatMessages">
     {% for msg in history %}
-      <div class="message {{ 'user-message' if msg.role=='user' else 'bot-message' }}">
-        <div class="message-avatar">
-          {% if msg.role == 'user' %}
-            <i class="fas fa-user"></i>
+    <div class="message {{ 'user-message' if msg.role == 'user' else 'bot-message' }}">
+      <div class="message-avatar">
+        {% if msg.role == 'user' %}
+          {% if user_data and user_data.user_info and user_data.user_info.picture %}
+            <img src="{{ user_data.user_info.picture }}" alt="User" class="rounded-circle">
           {% else %}
-            <img src="{{ url_for('static', filename='images/rajagiri-logo.png') }}" alt="Rajagiri Logo">
+            <i class="fas fa-user"></i>
           {% endif %}
-        </div>
-        <div class="message-content">
-          {{ msg.content | safe }}
-          {% if msg.role == 'assistant' %}
-            <div class="message-actions">
-              <button class="btn-action" title="Copy"><i class="far fa-copy"></i></button>
-              <button class="btn-action" title="Like"><i class="far fa-thumbs-up"></i></button>
-              <button class="btn-action" title="Dislike"><i class="far fa-thumbs-down"></i></button>
-            </div>
-          {% endif %}
-        </div>
+        {% else %}
+          <img src="{{ url_for('static', filename='images/rajagiri-logo.png') }}" alt="Rajagiri Logo">
+        {% endif %}
       </div>
+      <div class="message-content">
+        {{ msg.content | safe }}
+        
+        {% if msg.role == 'assistant' %}
+        <div class="message-actions"
+     data-chat="{{ current_chat }}"
+     data-index="{{ loop.index0 }}">
+        <button class="btn-action" onclick="rateFromButton(this, 'like')" title="Like">
+          <i class="far fa-thumbs-up"></i>
+        </button>
+        <button class="btn-action" onclick="rateFromButton(this, 'dislike')" title="Dislike">
+          <i class="far fa-thumbs-down"></i>
+        </button>
+      </div>
+        {% endif %}
+      </div>
+    </div>
     {% endfor %}
+
     <div id="loadingIndicator" style="display: none;">
       <div class="message bot-message">
         <div class="message-avatar">
@@ -64,7 +75,7 @@
       </div>
     </div>
   </div>
-  
+
   <div class="input-container">
     <form method="POST" id="chatForm" class="d-flex gap-2 align-items-center">
       <div class="input-group">
@@ -85,13 +96,71 @@
     document.getElementById('userInput').value = element.querySelector('span').textContent;
     document.getElementById('userInput').focus();
   }
-  
-  document.getElementById('chatForm').addEventListener('submit', function() {
+
+  document.getElementById('chatForm').addEventListener('submit', function () {
     document.getElementById('loadingIndicator').style.display = 'block';
-    window.scrollTo(0, document.body.scrollHeight);
+    scrollToBottom();
   });
-  
-  // Auto-scroll to bottom of chat
-  window.scrollTo(0, document.body.scrollHeight);
+
+  function scrollToBottom() {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTo({
+      top: chatMessages.scrollHeight,
+      behavior: 'smooth'
+    });
+  }
+
+  function copyToClipboard(button) {
+    const messageContent = button.closest('.message-content');
+    const textToCopy = messageContent.innerText.replace(/CopyLikeDislike/g, '').trim();
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      const icon = button.querySelector('i');
+      icon.classList.remove('far', 'fa-copy');
+      icon.classList.add('fas', 'fa-check');
+
+      setTimeout(() => {
+        icon.classList.remove('fas', 'fa-check');
+        icon.classList.add('far', 'fa-copy');
+      }, 2000);
+    });
+  }
+
+  function rateMessage(button, action, chatId, messageIndex) {
+    fetch('/rate-message', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        chatId: chatId,
+        messageIndex: messageIndex,
+        action: action
+      })
+    }).then(response => {
+      if (response.ok) {
+        const icon = button.querySelector('i');
+        if (action === 'like') {
+          icon.classList.remove('far');
+          icon.classList.add('fas');
+          const dislikeBtn = button.nextElementSibling;
+          if (dislikeBtn) {
+            dislikeBtn.querySelector('i').classList.remove('fas');
+            dislikeBtn.querySelector('i').classList.add('far');
+          }
+        } else {
+          icon.classList.remove('far');
+          icon.classList.add('fas');
+          const likeBtn = button.previousElementSibling;
+          if (likeBtn) {
+            likeBtn.querySelector('i').classList.remove('fas');
+            likeBtn.querySelector('i').classList.add('far');
+          }
+        }
+      }
+    });
+  }
+
+  scrollToBottom();
 </script>
 {% endblock %}
